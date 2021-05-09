@@ -80,6 +80,7 @@ myfputc(int inp, FILE* f)
 #include "ngspice/ngspice.h"
 #include "misc/misc_time.h"
 #include "ngspice/randnumb.h"
+#include "ngspice/jlextensions.h"
 
 /*Use Windows threads if on W32 without pthreads*/
 #ifndef HAVE_LIBPTHREAD
@@ -1020,6 +1021,18 @@ ngSpice_Init(SendChar* printfcn, SendStat* statusfcn, ControlledExit* ngspiceexi
 #endif
 
 #endif
+
+    return 0;
+}
+
+IMPEXP
+int
+ngSpice_Init_JLExtensions(int version, ResolvePathAt *pathresolve)
+{
+    if (version != 1)
+        return 1;
+
+    jl_pathresolve = pathresolve;
 
     return 0;
 }

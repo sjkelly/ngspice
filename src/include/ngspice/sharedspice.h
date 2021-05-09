@@ -334,6 +334,13 @@ typedef int (SendInitEvtData)(int, int, char*, char*, int, void*);
 */
 #endif
 
+/*
+  Path resolution hook.
+  char *name - file being searched for
+  char *dir - directory where the file is being searched
+*/
+typedef char * (ResolvePathAt)(char *, char*);
+
 /* ngspice initialization,
 printfcn: pointer to callback function for reading printf, fprintf
 statfcn: pointer to callback function for the status string and percent value
@@ -346,6 +353,9 @@ userData: pointer to user-defined data, will not be modified, but
 IMPEXP
 int  ngSpice_Init(SendChar* printfcn, SendStat* statfcn, ControlledExit* ngexit,
                   SendData* sdata, SendInitData* sinitdata, BGThreadRunning* bgtrun, void* userData);
+
+IMPEXP
+int ngSpice_Init_JLExtensions(int version, ResolvePathAt *pathresolve);
 
 /* initialization of synchronizing functions
 vsrcdat: pointer to callback function for retrieving a voltage source value from caller
