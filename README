@@ -1,3 +1,11 @@
+README FOR THIS FORK
+====================
+
+This fork (JuliaSky130/ngspice) contains experimental ngspice
+extensions to enable a more seamless workflow when integrating
+ngspice into a Julia-based analog design workflow. The extensions
+here are not proposed for upstreaming and are experimental only.
+
 README for NGSPICE
 ==================
 
