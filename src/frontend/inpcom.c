@@ -25,6 +25,7 @@ Author: 1985 Wayne A. Christopher
 #include "ngspice/ftedefs.h"
 #include "ngspice/fteext.h"
 #include "ngspice/fteinp.h"
+#include "ngspice/jlextensions.h"
 #include "numparam/general.h"
 
 #include <limits.h>
@@ -1568,9 +1569,18 @@ static char *inp_pathresolve(const char *name)
 } /* end of function inp_pathresolve */
 
 
+ResolvePathAt *jl_pathresolve = NULL;
 
 static char *inp_pathresolve_at(const char *name, const char *dir)
 {
+    if (jl_pathresolve) {
+        char *resolved_path = jl_pathresolve(name, dir);
+        if (resolved_path == (char*)-1)
+            return NULL;
+        else if (resolved_path != NULL)
+            return resolved_path;
+    }
+
     /* if name is an absolute path name,
      *   or if we haven't anything to prepend anyway
      */
