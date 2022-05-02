@@ -416,9 +416,6 @@
 /* Define to 1 if the system has the type `_Bool'. */
 /* #undef HAVE__BOOL */
 
-/* Define to 1 if you have the </proc/meminfo> header file. */
-/* #undef HAVE__PROC_MEMINFO */
-
 /* Client-Server only via stdio. */
 #define IPC_DEBUG_VIA_STDIO 1
 

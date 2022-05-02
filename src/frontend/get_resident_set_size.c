@@ -42,22 +42,23 @@
  */
 unsigned long long getPeakRSS(void)
 {
-#if defined(HAVE__PROC_MEMINFO)
+#if defined(__linux__) || defined(__CYGWIN__)
     /* Linux ---------------------------------------------------- */
     unsigned long long rss = 0L;
     FILE* fp = NULL;
-    if ( (fp = fopen( "/proc/self/statm", "r" )) == NULL )
-            return (unsigned long long) 0L; /* Can't open? */
-    if ( fscanf( fp, "%llu", &rss ) != 1 )
-    {
+    if ( (fp = fopen( "/proc/self/statm", "r" )) != NULL ) {
+        if ( fscanf( fp, "%llu", &rss ) == 1 )
+        {
+            fclose( fp );
+            return rss * (unsigned long long) sysconf(_SC_PAGESIZE);
+        }
         fclose( fp );
-        return 0L;      /* Can't read? */
     }
-    fclose( fp );
-        return rss * (unsigned long long) sysconf(_SC_PAGESIZE);
-        
-#elif defined(HAVE_GETRUSAGE)
-    /* BSD, Linux, and OSX -------------------------------------- 
+    // If /proc is not mounted, fall through
+#endif
+
+#if defined(HAVE_GETRUSAGE)
+    /* BSD, Linux, and OSX --------------------------------------
      * not (yet) available with CYGWIN */
     struct rusage rusage;
     getrusage(RUSAGE_SELF, &rusage);
@@ -118,8 +119,7 @@ unsigned long long getCurrentRSS(void)
         return 0L;      /* Can't access? */
         return (unsigned long long) info.resident_size;
 
-//#elif defined(__linux__) || defined(__linux) || defined(linux) || defined(__gnu_linux__)
-#elif defined(HAVE__PROC_MEMINFO)
+#elif defined(__linux__) || defined(__CYGWIN__)
     /* Linux ---------------------------------------------------- */
     unsigned long long rss = 0L;
     FILE* fp = NULL;
@@ -131,7 +131,7 @@ unsigned long long getCurrentRSS(void)
         return 0L;      /* Can't read? */
     }
     fclose( fp );
-        return rss * (unsigned long long) sysconf(_SC_PAGESIZE);
+    return rss * (unsigned long long) sysconf(_SC_PAGESIZE);
 
 #else
     /* AIX, BSD, Solaris, and Unknown OS ------------------------ */

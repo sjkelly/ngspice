@@ -1,7 +1,7 @@
 /*
  * Author:  Holger Vogt
  * License: 3-clause BSD License
- * 
+ *
  */
 
 #include "ngspice/ngspice.h"
@@ -26,13 +26,9 @@
 #error "Unable to define getMemorySize( ) for an unknown OS."
 #endif
 
-
-/**
- * Returns the size of available memory (RAM) in bytes.
- */
-unsigned long long getAvailableMemorySize(void)
+#if defined(__linux__) || defined(__CYGWIN__)
+static unsigned long long readProcMemInfoMemFree(void)
 {
-#if defined(HAVE__PROC_MEMINFO)
     /* Cygwin , Linux--------------------------------- */
     /* Search for string "MemFree" */
     FILE *fp;
@@ -56,8 +52,19 @@ unsigned long long getAvailableMemorySize(void)
         return 0L;
     sscanf(match, "MemFree: %llu", &mem_got);
     return mem_got * 1024L;
+}
+#endif
 
-#elif defined(_WIN32)
+#if defined(__unix__) || defined(__unix) || defined(unix)
+extern unsigned long long getTotalMemorySizeSyscall(void);
+#endif
+
+/**
+ * Returns the size of available memory (RAM) in bytes.
+ */
+unsigned long long getAvailableMemorySize(void)
+{
+#if defined(_WIN32)
     /* Windows. ------------------------------------------------- */
     MEMORYSTATUSEX status;
     status.dwLength = sizeof(status);
@@ -87,55 +94,23 @@ unsigned long long getAvailableMemorySize(void)
     return (unsigned long long)(vm_stat.free_count * pagesize);
 //    natural_t mem_total = mem_used + mem_free;
 
-#elif defined(__unix__) || defined(__unix) || defined(unix)
-    /* Linux/UNIX variants. ------------------------------------------- */
-    /* Prefer sysctl() over sysconf() except sysctl() HW_REALMEM and HW_PHYSMEM */
+#else
 
-#if defined(CTL_HW) && (defined(HW_MEMSIZE) || defined(HW_PHYSMEM64)) && defined(HAVE_SYS_SYSCTL_H)
-    int mib[2];
-    mib[0] = CTL_HW;
-#if defined(HW_MEMSIZE)
-    mib[1] = HW_MEMSIZE;            /* OSX. --------------------- */
-#elif defined(HW_PHYSMEM64)
-    mib[1] = HW_PHYSMEM64;          /* NetBSD, OpenBSD. --------- */
+#if defined(__CYGWIN__) || defined(__linux__)
+    unsigned long memfree = readProcMemInfoMemFree();
+    if (memfree != 0L) {
+        return memfree;
+    }
+    // Else (if /proc is not mounted) fall through
 #endif
-    int64_t size = 0;               /* 64-bit */
-    size_t len = sizeof( size );
-    if ( sysctl( mib, 2, &size, &len, NULL, 0 ) == 0 )
-        return (size_t)size;
-    return 0L;          /* Failed? */
 
-#elif defined(_SC_AIX_REALMEM)
-    /* AIX. ----------------------------------------------------- */
-    return (size_t)sysconf( _SC_AIX_REALMEM ) * (size_t)1024L;
-
-#elif defined(_SC_PHYS_PAGES) && defined(_SC_PAGESIZE)
-    /* FreeBSD, Linux, OpenBSD, and Solaris. -------------------- */
-    return (size_t)sysconf( _SC_PHYS_PAGES ) *
-        (size_t)sysconf( _SC_PAGESIZE );
-
-#elif defined(_SC_PHYS_PAGES) && defined(_SC_PAGE_SIZE)
-    /* Legacy. -------------------------------------------------- */
-    return (size_t)sysconf( _SC_PHYS_PAGES ) *
-        (size_t)sysconf( _SC_PAGE_SIZE );
-
-#elif defined(CTL_HW) && (defined(HW_PHYSMEM) || defined(HW_REALMEM)) && defined(HAVE_SYS_SYSCTL_H)
-    /* DragonFly BSD, FreeBSD, NetBSD, OpenBSD, and OSX. -------- */
-    int mib[2];
-    mib[0] = CTL_HW;
-#if defined(HW_REALMEM)
-    mib[1] = HW_REALMEM;        /* FreeBSD. ----------------- */
-#elif defined(HW_PYSMEM)
-    mib[1] = HW_PHYSMEM;        /* Others. ------------------ */
-#endif
-    unsigned int size = 0;      /* 32-bit */
-    size_t len = sizeof( size );
-    if ( sysctl( mib, 2, &size, &len, NULL, 0 ) == 0 )
-        return (size_t)size;
-    return 0L;          /* Failed? */
-#endif /* sysctl and sysconf variants */
-
+#if defined(__unix__) || defined(__unix) || defined(unix)
+    // We don't know how to get the available memory, but maybe we can get
+    // the total amount of memory, which is hopefully close enough.
+    return getTotalMemorySizeSyscall();
 #else
     return 0L;          /* Unknown OS. */
+#endif
+
 #endif
 }

@@ -727,8 +727,8 @@ case $with_wingui in
         ;;
     * )
 
-# Check for /proc (virtual process information file system)
-AC_CHECK_HEADERS([/proc/meminfo])
+
+AM_CONDITIONAL([CROSS_COMPILING], [test "x$cross_compiling" = xyes])
 
 # Checks for X11 header files and libraries - X11 support can be disabled
 # by passing the '--without-x' option to configure:
@@ -1463,8 +1463,6 @@ AC_CONFIG_FILES([Makefile
                  tests/xspice/digital/spinit
                  tests/resistance/Makefile
                  tests/vbic/Makefile])
-
-AM_CONDITIONAL([CROSS_COMPILING], [test "x$cross_compiling" = xyes])
 
 if test "x$cross_compiling" = xyes; then
    AC_CONFIG_COMMANDS([mkdir], [$MKDIR_P src/xspice/cmpp/build])

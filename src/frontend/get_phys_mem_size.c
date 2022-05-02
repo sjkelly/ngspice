@@ -26,13 +26,9 @@
 #endif
 
 
-
-/**
- * Returns the size of physical memory (RAM) in bytes.
- */
-unsigned long long getMemorySize(void)
+#if defined(__linux__) || defined(__CYGWIN__)
+static unsigned long long readProcMemInfoMemTotal(void)
 {
-#if defined(HAVE__PROC_MEMINFO)
     /* Cygwin , Linux--------------------------------- */
     FILE *fp;
     char buffer[2048];
@@ -56,17 +52,14 @@ unsigned long long getMemorySize(void)
         return 0;
     sscanf(match, "MemTotal: %llu", &mem_got);
     return mem_got * 1024L;
+}
+#endif
 
-#elif defined(_WIN32)
-    /* Windows. ------------------------------------------------- */
-    /* Use new 64-bit MEMORYSTATUSEX, not old 32-bit MEMORYSTATUS */
-    MEMORYSTATUSEX status;
-    status.dwLength = sizeof(status);
-    GlobalMemoryStatusEx( &status );
-    return (unsigned long long) status.ullTotalPhys;
-
-#elif defined(__unix__) || defined(__unix) || defined(unix) ||  \
-        (defined(__APPLE__) && defined(__MACH__))
+#if defined(__unix__) || defined(__unix) || defined(unix) ||  \
+    (defined( __APPLE__) && defined(__MACH__))
+extern unsigned long long getTotalMemorySizeSyscall(void);
+unsigned long long getTotalMemorySizeSyscall(void)
+{
     /* UNIX variants. ------------------------------------------- */
     /* Prefer sysctl() over sysconf() except sysctl() HW_REALMEM and HW_PHYSMEM */
 
@@ -112,9 +105,40 @@ unsigned long long getMemorySize(void)
     if ( sysctl( mib, 2, &size, &len, NULL, 0 ) == 0 )
         return (unsigned long long) size;
     return 0L;          /* Failed? */
+#else
+    return 0L;
 #endif /* sysctl and sysconf variants */
+}
+#endif
+
+/**
+ * Returns the size of physical memory (RAM) in bytes.
+ */
+unsigned long long getMemorySize(void)
+{
+#if defined(_WIN32)
+    /* Windows. ------------------------------------------------- */
+    /* Use new 64-bit MEMORYSTATUSEX, not old 32-bit MEMORYSTATUS */
+    MEMORYSTATUSEX status;
+    status.dwLength = sizeof(status);
+    GlobalMemoryStatusEx( &status );
+    return (unsigned long long) status.ullTotalPhys;
 
 #else
-    return 0L;          /* Unknown OS. */
+    #if defined(__linux__) || defined(__CYGWIN__)
+        unsigned long long memtotal = readProcMemInfoMemTotal();
+        if (memtotal != 0) {
+            return memtotal;
+        }
+        // Else (if /proc is not mounted) fall through to legacy behavior
+    #endif
+
+    #if defined(__unix__) || defined(__unix) || defined(unix) ||  \
+        (defined( __APPLE__) && defined(__MACH__))
+
+        return getTotalMemorySizeSyscall();
+    #else
+        return 0L;          /* Unknown OS. */
+    #endif
 #endif
 }

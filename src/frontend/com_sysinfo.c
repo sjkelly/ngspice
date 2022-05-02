@@ -166,7 +166,7 @@ static void fprintmem(FILE *stream, unsigned long long memory)
 
 
 /*** Get processor and memory information as appropriate for the system ***/
-#ifdef HAVE__PROC_MEMINFO
+#if defined(__linux__) || defined(__CYGWIN__)
 
 /* Get memory information */
 static int get_sysmem(struct sys_memory *memall)

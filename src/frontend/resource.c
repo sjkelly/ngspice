@@ -59,7 +59,7 @@ Author: 1985 Wayne A. Christopher, U. C. Berkeley CAD Group
 static void printres(char *name);
 static void fprintmem(FILE *stream, unsigned long long memory);
 
-#if defined(HAVE_WIN32) || defined(HAVE__PROC_MEMINFO)
+#if defined(HAVE_WIN32) || defined(__linux__) || defined(__CYGWIN__)
 static int get_procm(struct proc_mem *memall);
 
 struct sys_mem mem_t, mem_t_act;
@@ -268,12 +268,12 @@ printres(char *name)
         fprintmem(cp_out, mem);
         fprintf(cp_out, ".\n");
 
-#if defined(HAVE__PROC_MEMINFO)
+#if defined(__linux__) || defined(__CYGWIN__)
         get_procm(&mem_ng_act);
 //        fprintf(cp_out, "Resident set size = ");
 //        fprintmem(cp_out, mem_ng_act.resident);
 //        fprintf(cp_out, ".\n");
-        fprintf(cp_out, "\n");  
+        fprintf(cp_out, "\n");
         fprintf(cp_out, "Shared ngspice pages = ");
         fprintmem(cp_out, mem_ng_act.shared);
         fprintf(cp_out, ".\n");
@@ -415,7 +415,7 @@ fprintmem(FILE *stream, unsigned long long memory) {
 }
 
 
-#if defined(HAVE_WIN32) || defined(HAVE__PROC_MEMINFO)
+#if defined(HAVE_WIN32) || defined(__linux__) || defined(__CYGWIN__)
 
 static int get_procm(struct proc_mem *memall) {
 
